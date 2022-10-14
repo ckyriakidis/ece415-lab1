@@ -122,30 +122,13 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 				output[i*SIZE + j] = 255;      
 			else
 				output[i*SIZE + j] = (unsigned char)res;
+			
+			/* Now run through the output and the golden output to calculate *
+	 		 * the MSE and then the PSNR.									 */
+			PSNR += pow((output[i*SIZE+j] - golden[i*SIZE+j]),2);
 		}
 	}
 
-	/* Now run through the output and the golden output to calculate *
-	 * the MSE and then the PSNR.									 */
-	for (i=1; i<SIZE-1; i++ ) {
-		for ( j=1; j<SIZE-3; j+=12 ) {
-			PSNR += pow((output[i*SIZE+j] - golden[i*SIZE+j]),2);
-			PSNR += pow((output[i*SIZE+j+1] - golden[i*SIZE+j+1]),2);
-			PSNR += pow((output[i*SIZE+j+2] - golden[i*SIZE+j+2]),2);
-			PSNR += pow((output[i*SIZE+j+3] - golden[i*SIZE+j+3]),2);
-			PSNR += pow((output[i*SIZE+j+4] - golden[i*SIZE+j+4]),2);
-			PSNR += pow((output[i*SIZE+j+5] - golden[i*SIZE+j+5]),2);
-			PSNR += pow((output[i*SIZE+j+6] - golden[i*SIZE+j+6]),2);
-			PSNR += pow((output[i*SIZE+j+7] - golden[i*SIZE+j+7]),2);
-			PSNR += pow((output[i*SIZE+j+8] - golden[i*SIZE+j+8]),2);
-			PSNR += pow((output[i*SIZE+j+9] - golden[i*SIZE+j+9]),2);
-			PSNR += pow((output[i*SIZE+j+10] - golden[i*SIZE+j+10]),2);
-			PSNR += pow((output[i*SIZE+j+11] - golden[i*SIZE+j+11]),2);
-		}
-		PSNR += pow((output[i*SIZE+4093] - golden[i*SIZE+4093]),2);
-		PSNR += pow((output[i*SIZE+4094] - golden[i*SIZE+4094]),2);
-	}
-  
 	PSNR /= (double)(SIZE*SIZE);
 	PSNR = 10*log10(65536/PSNR);
 

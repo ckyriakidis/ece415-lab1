@@ -38,14 +38,19 @@ unsigned char input[SIZE*SIZE], output[SIZE*SIZE], golden[SIZE*SIZE];
  * value is the convolution of the operator with the neighboring pixels of the*
  * pixel we process.														  */
 int convolution2D(int posy, int posx, const unsigned char *input, char operator[][3]) {
-	int i, j, res;
+	int res;
   
 	res = 0;
-	for (i = -1; i <= 1; i++) {
-		for (j = -1; j <= 1; j++) {
-			res += input[(posy + i)*SIZE + posx + j] * operator[i+1][j+1];
-		}
-	}
+	res += input[(posy - 1)*SIZE + posx - 1] * operator[0][0];
+	res += input[(posy - 1)*SIZE + posx] * operator[0][1];
+	res += input[(posy - 1)*SIZE + posx + 1] * operator[0][2];
+	res += input[(posy)*SIZE + posx - 1] * operator[1][0];
+	res += input[(posy)*SIZE + posx] * operator[1][1];
+	res += input[(posy)*SIZE + posx + 1] * operator[1][2];
+	res += input[(posy + 1)*SIZE + posx - 1] * operator[2][0];
+	res += input[(posy + 1)*SIZE + posx] * operator[2][1];
+	res += input[(posy + 1)*SIZE + posx + 1] * operator[2][2];
+
 	return(res);
 }
 
@@ -122,11 +127,23 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 
 	/* Now run through the output and the golden output to calculate *
 	 * the MSE and then the PSNR.									 */
-	for (i=1; i<SIZE-1; i++) {
-		for ( j=1; j<SIZE-1; j++ ) {
-			t = pow((output[i*SIZE+j] - golden[i*SIZE+j]),2);
-			PSNR += t;
+	for (i=1; i<SIZE-1; i++ ) {
+		for ( j=1; j<SIZE-3; j+=12 ) {
+			PSNR += pow((output[i*SIZE+j] - golden[i*SIZE+j]),2);
+			PSNR += pow((output[i*SIZE+j+1] - golden[i*SIZE+j+1]),2);
+			PSNR += pow((output[i*SIZE+j+2] - golden[i*SIZE+j+2]),2);
+			PSNR += pow((output[i*SIZE+j+3] - golden[i*SIZE+j+3]),2);
+			PSNR += pow((output[i*SIZE+j+4] - golden[i*SIZE+j+4]),2);
+			PSNR += pow((output[i*SIZE+j+5] - golden[i*SIZE+j+5]),2);
+			PSNR += pow((output[i*SIZE+j+6] - golden[i*SIZE+j+6]),2);
+			PSNR += pow((output[i*SIZE+j+7] - golden[i*SIZE+j+7]),2);
+			PSNR += pow((output[i*SIZE+j+8] - golden[i*SIZE+j+8]),2);
+			PSNR += pow((output[i*SIZE+j+9] - golden[i*SIZE+j+9]),2);
+			PSNR += pow((output[i*SIZE+j+10] - golden[i*SIZE+j+10]),2);
+			PSNR += pow((output[i*SIZE+j+11] - golden[i*SIZE+j+11]),2);
 		}
+		PSNR += pow((output[i*SIZE+4093] - golden[i*SIZE+4093]),2);
+		PSNR += pow((output[i*SIZE+4094] - golden[i*SIZE+4094]),2);
 	}
   
 	PSNR /= (double)(SIZE*SIZE);

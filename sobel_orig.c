@@ -36,9 +36,9 @@ unsigned char input[SIZE*SIZE], output[SIZE*SIZE], golden[SIZE*SIZE];
 double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 {
 	double PSNR = 0, t;
-	int i, j, res_horiz, res_vert;
+	int i, j, res_horiz, res_vert, sz_sqrd = SIZE*SIZE;
 	unsigned int p;
-	int res, sz_mn, sz, sz_pl;
+	int res, sz_mn, sz, sz_pl, szj_mn, szj, szj_pl;
 	struct timespec  tv1, tv2;
 	FILE *f_in, *f_out, *f_golden;
 
@@ -48,8 +48,9 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 	memset(output, 0, SIZE*sizeof(unsigned char));
 	memset(&output[SIZE*(SIZE-1)], 0, SIZE*sizeof(unsigned char));
 	for (i = 1; i < SIZE-1; i++) {
-		output[i*SIZE] = 0;
-		output[i*SIZE + SIZE - 1] = 0;
+		sz = i*SIZE;
+		output[sz] = 0;
+		output[sz + SIZE - 1] = 0;
 	}
 
 	/* Open the input, output, golden files, read the input and golden    *
@@ -75,8 +76,8 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 		exit(1);
 	}    
 
-	fread(input, sizeof(unsigned char), SIZE*SIZE, f_in);
-	fread(golden, sizeof(unsigned char), SIZE*SIZE, f_golden);
+	fread(input, sizeof(unsigned char), sz_sqrd, f_in);
+	fread(golden, sizeof(unsigned char), sz_sqrd, f_golden);
 	fclose(f_in);
 	fclose(f_golden);
   
@@ -89,26 +90,29 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 		sz_pl = (i + 1) * SIZE;
 		for (j=1; j<SIZE-1; j+=1) {
 			/* Implement a 2D convolution of the matrix with the operator */
+			szj_mn = sz_mn + j;
+			szj = sz + j;
+			szj_pl = sz_pl + j;
 			res_horiz = 0;
-			res_horiz += input[sz_mn + j - 1] * horiz_operator[0][0];
-			res_horiz += input[sz_mn + j] * horiz_operator[0][1];
-			res_horiz += input[sz_mn + j + 1] * horiz_operator[0][2];
-			res_horiz += input[sz + j - 1] * horiz_operator[1][0];
-			res_horiz += input[sz + j] * horiz_operator[1][1];
-			res_horiz += input[sz + j + 1] * horiz_operator[1][2];
-			res_horiz += input[sz_pl + j - 1] * horiz_operator[2][0];
-			res_horiz += input[sz_pl + j] * horiz_operator[2][1];
-			res_horiz += input[sz_pl + j + 1] * horiz_operator[2][2];
+			res_horiz += input[szj_mn - 1] * horiz_operator[0][0];
+			res_horiz += input[szj_mn] * horiz_operator[0][1];
+			res_horiz += input[szj_mn + 1] * horiz_operator[0][2];
+			res_horiz += input[szj - 1] * horiz_operator[1][0];
+			res_horiz += input[szj] * horiz_operator[1][1];
+			res_horiz += input[szj + 1] * horiz_operator[1][2];
+			res_horiz += input[szj_pl - 1] * horiz_operator[2][0];
+			res_horiz += input[szj_pl] * horiz_operator[2][1];
+			res_horiz += input[szj_pl + 1] * horiz_operator[2][2];
 			res_vert = 0;
-			res_vert += input[sz_mn + j - 1] * vert_operator[0][0];
-			res_vert += input[sz_mn + j] * vert_operator[0][1];
-			res_vert += input[sz_mn + j + 1] * vert_operator[0][2];
-			res_vert += input[sz + j - 1] * vert_operator[1][0];
-			res_vert += input[sz + j] * vert_operator[1][1];
-			res_vert += input[sz + j + 1] * vert_operator[1][2];
-			res_vert += input[sz_pl + j - 1] * vert_operator[2][0];
-			res_vert += input[sz_pl + j] * vert_operator[2][1];
-			res_vert += input[sz_pl + j + 1] * vert_operator[2][2];
+			res_vert += input[szj_mn - 1] * vert_operator[0][0];
+			res_vert += input[szj_mn] * vert_operator[0][1];
+			res_vert += input[szj_mn + 1] * vert_operator[0][2];
+			res_vert += input[szj - 1] * vert_operator[1][0];
+			res_vert += input[szj] * vert_operator[1][1];
+			res_vert += input[szj + 1] * vert_operator[1][2];
+			res_vert += input[szj_pl - 1] * vert_operator[2][0];
+			res_vert += input[szj_pl] * vert_operator[2][1];
+			res_vert += input[szj_pl + 1] * vert_operator[2][2];
 			
 			/* Apply the sobel filter and calculate the magnitude *
 			 * of the derivative.								  */
@@ -118,9 +122,9 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 			/* If the resulting value is greater than 255, clip it *
 			 * to 255.											   */
 			if (res > 255)
-				output[sz + j] = 255;      
+				output[szj] = 255;      
 			else
-				output[sz + j] = (unsigned char)res;
+				output[szj] = (unsigned char)res;
 		}
 	}
 
@@ -129,24 +133,25 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 	for (i=1; i<SIZE-1; i++ ) {
 		sz = i * SIZE;
 		for ( j=1; j<SIZE-3; j+=12 ) {
-			PSNR += pow((output[sz+j] - golden[sz+j]),2);
-			PSNR += pow((output[sz+j+1] - golden[sz+j+1]),2);
-			PSNR += pow((output[sz+j+2] - golden[sz+j+2]),2);
-			PSNR += pow((output[sz+j+3] - golden[sz+j+3]),2);
-			PSNR += pow((output[sz+j+4] - golden[sz+j+4]),2);
-			PSNR += pow((output[sz+j+5] - golden[sz+j+5]),2);
-			PSNR += pow((output[sz+j+6] - golden[sz+j+6]),2);
-			PSNR += pow((output[sz+j+7] - golden[sz+j+7]),2);
-			PSNR += pow((output[sz+j+8] - golden[sz+j+8]),2);
-			PSNR += pow((output[sz+j+9] - golden[sz+j+9]),2);
-			PSNR += pow((output[sz+j+10] - golden[sz+j+10]),2);
-			PSNR += pow((output[sz+j+11] - golden[sz+j+11]),2);
+			szj = sz + j;
+			PSNR += pow((output[szj] - golden[szj]),2);
+			PSNR += pow((output[szj+1] - golden[szj+1]),2);
+			PSNR += pow((output[szj+2] - golden[szj+2]),2);
+			PSNR += pow((output[szj+3] - golden[szj+3]),2);
+			PSNR += pow((output[szj+4] - golden[szj+4]),2);
+			PSNR += pow((output[szj+5] - golden[szj+5]),2);
+			PSNR += pow((output[szj+6] - golden[szj+6]),2);
+			PSNR += pow((output[szj+7] - golden[szj+7]),2);
+			PSNR += pow((output[szj+8] - golden[szj+8]),2);
+			PSNR += pow((output[szj+9] - golden[szj+9]),2);
+			PSNR += pow((output[szj+10] - golden[szj+10]),2);
+			PSNR += pow((output[szj+11] - golden[szj+11]),2);
 		}
 		PSNR += pow((output[sz+4093] - golden[sz+4093]),2);
 		PSNR += pow((output[sz+4094] - golden[sz+4094]),2);
 	}
   
-	PSNR /= (double)(SIZE*SIZE);
+	PSNR /= (double)(sz_sqrd);
 	PSNR = 10*log10(65536/PSNR);
 
 	/* This is the end of the main computation. Take the end time,  *
@@ -159,7 +164,7 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 
   
 	/* Write the output file */
-	fwrite(output, sizeof(unsigned char), SIZE*SIZE, f_out);
+	fwrite(output, sizeof(unsigned char), sz_sqrd, f_out);
 	fclose(f_out);
   
 	return PSNR;

@@ -21,7 +21,6 @@ char vert_operator[3][3] = {{1, 2, 1},
                             {-1, -2, -1}};
 
 double sobel(unsigned char *input, unsigned char *output, unsigned char *golden);
-int convolution2D(int posy, int posx, const unsigned char *input, char operator[][3]);
 
 /* The arrays holding the input image, the output image and the output used *
  * as golden standard. The luminosity (intensity) of each pixel in the      *
@@ -30,31 +29,6 @@ int convolution2D(int posy, int posx, const unsigned char *input, char operator[
  * order (element after element within each row and row after row. 			*/
 unsigned char input[SIZE*SIZE], output[SIZE*SIZE], golden[SIZE*SIZE];
 
-
-/* Implement a 2D convolution of the matrix with the operator */
-/* posy and posx correspond to the vertical and horizontal disposition of the *
- * pixel we process in the original image, input is the input image and       *
- * operator the operator we apply (horizontal or vertical). The function ret. *
- * value is the convolution of the operator with the neighboring pixels of the*
- * pixel we process.														  */
-int convolution2D(int posy, int posx, const unsigned char *input, char operator[][3]) {
-	int res;
-  
-	res = 0;
-	res += input[(posy - 1)*SIZE + posx - 1] * operator[0][0];
-	res += input[(posy - 1)*SIZE + posx] * operator[0][1];
-	res += input[(posy - 1)*SIZE + posx + 1] * operator[0][2];
-	res += input[(posy)*SIZE + posx - 1] * operator[1][0];
-	res += input[(posy)*SIZE + posx] * operator[1][1];
-	res += input[(posy)*SIZE + posx + 1] * operator[1][2];
-	res += input[(posy + 1)*SIZE + posx - 1] * operator[2][0];
-	res += input[(posy + 1)*SIZE + posx] * operator[2][1];
-	res += input[(posy + 1)*SIZE + posx + 1] * operator[2][2];
-
-	return(res);
-}
-
-
 /* The main computational function of the program. The input, output and *
  * golden arguments are pointers to the arrays used to store the input   *
  * image, the output produced by the algorithm and the output used as    *
@@ -62,7 +36,7 @@ int convolution2D(int posy, int posx, const unsigned char *input, char operator[
 double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 {
 	double PSNR = 0, t;
-	int i, j;
+	int i, j, res_horiz, res_vert;
 	unsigned int p;
 	int res;
 	struct timespec  tv1, tv2;
@@ -111,10 +85,32 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 	/* For each pixel of the output image */
 	for (i=1; i<SIZE-1; i+=1 ) {
 		for (j=1; j<SIZE-1; j+=1) {
+			/* Implement a 2D convolution of the matrix with the operator */
+			res_horiz = 0;
+			res_horiz += input[(i - 1)*SIZE + j - 1] * horiz_operator[0][0];
+			res_horiz += input[(i - 1)*SIZE + j] * horiz_operator[0][1];
+			res_horiz += input[(i - 1)*SIZE + j + 1] * horiz_operator[0][2];
+			res_horiz += input[i*SIZE + j - 1] * horiz_operator[1][0];
+			res_horiz += input[i*SIZE + j] * horiz_operator[1][1];
+			res_horiz += input[i*SIZE + j + 1] * horiz_operator[1][2];
+			res_horiz += input[(i + 1)*SIZE + j - 1] * horiz_operator[2][0];
+			res_horiz += input[(i + 1)*SIZE + j] * horiz_operator[2][1];
+			res_horiz += input[(i + 1)*SIZE + j + 1] * horiz_operator[2][2];
+			res_vert = 0;
+			res_vert += input[(i - 1)*SIZE + j - 1] * vert_operator[0][0];
+			res_vert += input[(i - 1)*SIZE + j] * vert_operator[0][1];
+			res_vert += input[(i - 1)*SIZE + j + 1] * vert_operator[0][2];
+			res_vert += input[i*SIZE + j - 1] * vert_operator[1][0];
+			res_vert += input[i*SIZE + j] * vert_operator[1][1];
+			res_vert += input[i*SIZE + j + 1] * vert_operator[1][2];
+			res_vert += input[(i + 1)*SIZE + j - 1] * vert_operator[2][0];
+			res_vert += input[(i + 1)*SIZE + j] * vert_operator[2][1];
+			res_vert += input[(i + 1)*SIZE + j + 1] * vert_operator[2][2];
+			
 			/* Apply the sobel filter and calculate the magnitude *
 			 * of the derivative.								  */
-			p = pow(convolution2D(i, j, input, horiz_operator), 2) + 
-				pow(convolution2D(i, j, input, vert_operator), 2);
+			p = pow(res_horiz, 2) + 
+				pow(res_vert, 2);
 			res = (int)sqrt(p);
 			/* If the resulting value is greater than 255, clip it *
 			 * to 255.											   */
@@ -122,13 +118,30 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 				output[i*SIZE + j] = 255;      
 			else
 				output[i*SIZE + j] = (unsigned char)res;
-			
-			/* Now run through the output and the golden output to calculate *
-	 		 * the MSE and then the PSNR.									 */
-			PSNR += pow((output[i*SIZE+j] - golden[i*SIZE+j]),2);
 		}
 	}
 
+	/* Now run through the output and the golden output to calculate *
+	 * the MSE and then the PSNR.									 */
+	for (i=1; i<SIZE-1; i++ ) {
+		for ( j=1; j<SIZE-3; j+=12 ) {
+			PSNR += pow((output[i*SIZE+j] - golden[i*SIZE+j]),2);
+			PSNR += pow((output[i*SIZE+j+1] - golden[i*SIZE+j+1]),2);
+			PSNR += pow((output[i*SIZE+j+2] - golden[i*SIZE+j+2]),2);
+			PSNR += pow((output[i*SIZE+j+3] - golden[i*SIZE+j+3]),2);
+			PSNR += pow((output[i*SIZE+j+4] - golden[i*SIZE+j+4]),2);
+			PSNR += pow((output[i*SIZE+j+5] - golden[i*SIZE+j+5]),2);
+			PSNR += pow((output[i*SIZE+j+6] - golden[i*SIZE+j+6]),2);
+			PSNR += pow((output[i*SIZE+j+7] - golden[i*SIZE+j+7]),2);
+			PSNR += pow((output[i*SIZE+j+8] - golden[i*SIZE+j+8]),2);
+			PSNR += pow((output[i*SIZE+j+9] - golden[i*SIZE+j+9]),2);
+			PSNR += pow((output[i*SIZE+j+10] - golden[i*SIZE+j+10]),2);
+			PSNR += pow((output[i*SIZE+j+11] - golden[i*SIZE+j+11]),2);
+		}
+		PSNR += pow((output[i*SIZE+4093] - golden[i*SIZE+4093]),2);
+		PSNR += pow((output[i*SIZE+4094] - golden[i*SIZE+4094]),2);
+	}
+  
 	PSNR /= (double)(SIZE*SIZE);
 	PSNR = 10*log10(65536/PSNR);
 

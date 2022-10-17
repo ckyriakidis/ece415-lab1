@@ -12,14 +12,6 @@
 #define OUTPUT_FILE	"output_sobel.grey"
 #define GOLDEN_FILE	"golden.grey"
 
-/* The horizontal and vertical operators to be used in the sobel filter */
-char horiz_operator[3][3] = {{-1, 0, 1}, 
-                             {-2, 0, 2}, 
-                             {-1, 0, 1}};
-char vert_operator[3][3] = {{1, 2, 1}, 
-                            {0, 0, 0}, 
-                            {-1, -2, -1}};
-
 double sobel(unsigned char *input, unsigned char *output, unsigned char *golden);
 
 /* The arrays holding the input image, the output image and the output used *
@@ -94,25 +86,19 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 			szj = sz + j;
 			szj_pl = sz_pl + j;
 			res_horiz = 0;
-			res_horiz += input[szj_mn - 1] * horiz_operator[0][0];
-			res_horiz += input[szj_mn] * horiz_operator[0][1];
-			res_horiz += input[szj_mn + 1] * horiz_operator[0][2];
-			res_horiz += input[szj - 1] * horiz_operator[1][0];
-			res_horiz += input[szj] * horiz_operator[1][1];
-			res_horiz += input[szj + 1] * horiz_operator[1][2];
-			res_horiz += input[szj_pl - 1] * horiz_operator[2][0];
-			res_horiz += input[szj_pl] * horiz_operator[2][1];
-			res_horiz += input[szj_pl + 1] * horiz_operator[2][2];
+			res_horiz -= input[szj_mn - 1];
+			res_horiz += input[szj_mn + 1];
+			res_horiz -= input[szj - 1] << 1;
+			res_horiz += input[szj + 1] << 1;
+			res_horiz -= input[szj_pl - 1];
+			res_horiz += input[szj_pl + 1];
 			res_vert = 0;
-			res_vert += input[szj_mn - 1] * vert_operator[0][0];
-			res_vert += input[szj_mn] * vert_operator[0][1];
-			res_vert += input[szj_mn + 1] * vert_operator[0][2];
-			res_vert += input[szj - 1] * vert_operator[1][0];
-			res_vert += input[szj] * vert_operator[1][1];
-			res_vert += input[szj + 1] * vert_operator[1][2];
-			res_vert += input[szj_pl - 1] * vert_operator[2][0];
-			res_vert += input[szj_pl] * vert_operator[2][1];
-			res_vert += input[szj_pl + 1] * vert_operator[2][2];
+			res_vert += input[szj_mn - 1];
+			res_vert += input[szj_mn] << 1;
+			res_vert += input[szj_mn + 1];
+			res_vert -= input[szj_pl - 1];
+			res_vert -= input[szj_pl] << 1;
+			res_vert -= input[szj_pl + 1];
 			
 			/* Apply the sobel filter and calculate the magnitude *
 			 * of the derivative.								  */

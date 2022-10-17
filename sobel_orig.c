@@ -27,10 +27,9 @@ unsigned char input[SIZE*SIZE], output[SIZE*SIZE], golden[SIZE*SIZE];
  * golden standard for the comparisons.									 */
 double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 {
-	double PSNR = 0, t;
-	int i, j, res_horiz, res_vert, sz_sqrd = SIZE*SIZE;
-	unsigned int p;
-	int res, sz_mn, sz, sz_pl, szj_mn, szj, szj_pl;
+	double PSNR = 0;
+	int i, j, res_horiz, res_vert;
+	int res, sz_mn, sz, sz_pl, szj_mn, szj, szj_pl, sz_sqrd = SIZE*SIZE;
 	struct timespec  tv1, tv2;
 	FILE *f_in, *f_out, *f_golden;
 
@@ -86,25 +85,13 @@ double sobel(unsigned char *input, unsigned char *output, unsigned char *golden)
 			szj = sz + j;
 			szj_pl = sz_pl + j;
 			res_horiz = 0;
-			res_horiz -= input[szj_mn - 1];
-			res_horiz += input[szj_mn + 1];
-			res_horiz -= input[szj - 1] << 1;
-			res_horiz += input[szj + 1] << 1;
-			res_horiz -= input[szj_pl - 1];
-			res_horiz += input[szj_pl + 1];
+			res_horiz += - input[szj_mn - 1] + input[szj_mn + 1] - (input[szj - 1] << 1) + (input[szj + 1] << 1) - input[szj_pl - 1] + input[szj_pl + 1];
 			res_vert = 0;
-			res_vert += input[szj_mn - 1];
-			res_vert += input[szj_mn] << 1;
-			res_vert += input[szj_mn + 1];
-			res_vert -= input[szj_pl - 1];
-			res_vert -= input[szj_pl] << 1;
-			res_vert -= input[szj_pl + 1];
+			res_vert += input[szj_mn - 1] + (input[szj_mn] << 1) + input[szj_mn + 1] - input[szj_pl - 1] - (input[szj_pl] << 1) - input[szj_pl + 1];
 			
 			/* Apply the sobel filter and calculate the magnitude *
 			 * of the derivative.								  */
-			p = pow(res_horiz, 2) + 
-				pow(res_vert, 2);
-			res = (int)sqrt(p);
+			res = (int)sqrt(pow(res_horiz, 2) + pow(res_vert, 2));
 			/* If the resulting value is greater than 255, clip it *
 			 * to 255.											   */
 			if (res > 255)
